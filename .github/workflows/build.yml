@@ -19,13 +19,14 @@ jobs:
           distribution: 'temurin'
 
       - name: Rendre gradlew exécutable
-        run: chmod +x gradlew
+        run: chmod +x safari-beacon/gradlew
 
       - name: Compiler le mod
+        working-directory: safari-beacon
         run: ./gradlew build
 
       - name: Publier le .jar
         uses: actions/upload-artifact@v4
         with:
           name: safari-beacon-jar
-          path: build/libs/safari-beacon-*.jar
+          path: safari-beacon/build/libs/safari-beacon-*.jar
