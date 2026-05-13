@@ -18,12 +18,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Rendre gradlew exécutable
-        run: chmod +x safari-beacon/gradlew
-
       - name: Compiler le mod
         working-directory: safari-beacon
-        run: ./gradlew build
+        run: java -jar gradle/wrapper/gradle-wrapper.jar build
 
       - name: Publier le .jar
         uses: actions/upload-artifact@v4
