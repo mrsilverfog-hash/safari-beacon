@@ -2,11 +2,13 @@ package net.tropimon.safaribeacon.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -14,7 +16,9 @@ import net.minecraft.world.World;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public class SafariBeaconRenderer {
 
@@ -103,6 +107,21 @@ public class SafariBeaconRenderer {
         BufferRenderer.drawWithGlobalProgram(buffer.end());
     }
 
+    @SuppressWarnings("unchecked")
+    private static boolean isAvailable(BlockState state) {
+        // Récupérer la propriété "available" directement depuis le bloc
+        Collection<Property<?>> properties = state.getProperties();
+        for (Property<?> prop : properties) {
+            if (prop.getName().equals("available")) {
+                // Lire la valeur comme Comparable puis comparer à true
+                Comparable<?> value = state.get((Property) prop);
+                return Boolean.TRUE.equals(value);
+            }
+        }
+        // Si propriété introuvable, afficher quand même le faisceau
+        return true;
+    }
+
     private static List<BlockPos> findNearbyBlocks(World world, BlockPos center) {
         List<BlockPos> result = new ArrayList<>();
         BlockPos.iterate(
@@ -114,8 +133,9 @@ public class SafariBeaconRenderer {
             if (id.getNamespace().equals(MOD_ID)) {
                 for (String name : BLOCK_NAMES) {
                     if (id.getPath().equals(name)) {
-                        // Pas de vérification available pour l'instant — afficher sur tous les blocs
-                        result.add(pos.toImmutable());
+                        if (isAvailable(state)) {
+                            result.add(pos.toImmutable());
+                        }
                         break;
                     }
                 }
