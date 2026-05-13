@@ -7,7 +7,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
-import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -24,8 +23,6 @@ public class SafariBeaconRenderer {
         "suspicious_safari_gravel",
         "suspicious_safari_sand"
     };
-
-    private static final BooleanProperty AVAILABLE = BooleanProperty.of("available");
 
     private static final float BEAM_RED   = 1.0f;
     private static final float BEAM_GREEN = 0.10f;
@@ -117,13 +114,8 @@ public class SafariBeaconRenderer {
             if (id.getNamespace().equals(MOD_ID)) {
                 for (String name : BLOCK_NAMES) {
                     if (id.getPath().equals(name)) {
-                        try {
-                            if (state.contains(AVAILABLE) && state.get(AVAILABLE)) {
-                                result.add(pos.toImmutable());
-                            }
-                        } catch (Exception e) {
-                            result.add(pos.toImmutable());
-                        }
+                        // Pas de vérification available pour l'instant — afficher sur tous les blocs
+                        result.add(pos.toImmutable());
                         break;
                     }
                 }
