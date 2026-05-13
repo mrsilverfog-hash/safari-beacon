@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "safaribeacon",
+  "version": "${version}",
+  "name": "Safari Beacon",
+  "description": "Affiche un faisceau lumineux au-dessus des blocs Gravier Suspect Safari et Sable Suspect Safari de TropiFurnitures.",
+  "authors": ["Tropimon"],
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "net.tropimon.safaribeacon.SafariBeaconClient"
+    ]
+  },
+  "mixins": [
+    "safaribeacon.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1"
+  }
+}
