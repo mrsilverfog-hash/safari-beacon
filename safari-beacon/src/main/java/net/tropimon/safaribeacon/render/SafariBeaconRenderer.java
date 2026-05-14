@@ -2,9 +2,9 @@ package net.tropimon.safaribeacon.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
@@ -18,7 +18,6 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public class SafariBeaconRenderer {
 
@@ -39,30 +38,44 @@ public class SafariBeaconRenderer {
     private static final float BEAM_INNER_RADIUS = 0.12f;
     private static final float BEAM_OUTER_RADIUS = 0.25f;
 
+    // Cache : on ne rescanne que toutes les 40 ticks (~2 secondes)
+    private static List<BlockPos> cachedBlocks = new ArrayList<>();
+    private static long lastScanTick = -1;
+    private static final int SCAN_INTERVAL = 40;
+
     public static void onWorldRenderLast(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
         World world = client.world;
         if (world == null || client.player == null) return;
 
-        List<BlockPos> safariBlocks = findNearbyBlocks(world, client.player.getBlockPos());
-        if (safariBlocks.isEmpty()) return;
+        long currentTick = world.getTime();
 
-        MatrixStack matrices = context.matrixStack();
+        // Ne rescanner que toutes les 2 secondes
+        if (currentTick - lastScanTick >= SCAN_INTERVAL) {
+            cachedBlocks = findNearbyBlocks(world, client.player.getBlockPos());
+            lastScanTick = currentTick;
+        }
+
+        if (cachedBlocks.isEmpty()) return;
+
         Camera camera = context.camera();
         Vec3d camPos = camera.getPos();
 
         float tickDelta = context.tickCounter().getTickDelta(true);
-        long time = world.getTime();
-        float angle = ((time % 360) + tickDelta) * 2.0f;
+        float angle = ((currentTick % 360) + tickDelta) * 2.0f;
 
+        // Sauvegarder l'état OpenGL
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
 
+        // Utiliser une matrice propre sans hériter de la matrice du monde
+        MatrixStack matrices = new MatrixStack();
+
         Tessellator tessellator = Tessellator.getInstance();
 
-        for (BlockPos pos : safariBlocks) {
+        for (BlockPos pos : cachedBlocks) {
             matrices.push();
             matrices.translate(
                 pos.getX() + 0.5 - camPos.x,
@@ -109,16 +122,13 @@ public class SafariBeaconRenderer {
 
     @SuppressWarnings("unchecked")
     private static boolean isAvailable(BlockState state) {
-        // Récupérer la propriété "available" directement depuis le bloc
         Collection<Property<?>> properties = state.getProperties();
         for (Property<?> prop : properties) {
             if (prop.getName().equals("available")) {
-                // Lire la valeur comme Comparable puis comparer à true
                 Comparable<?> value = state.get((Property) prop);
                 return Boolean.TRUE.equals(value);
             }
         }
-        // Si propriété introuvable, afficher quand même le faisceau
         return true;
     }
 
