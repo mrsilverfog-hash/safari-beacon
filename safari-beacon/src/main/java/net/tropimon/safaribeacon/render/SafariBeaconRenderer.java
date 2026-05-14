@@ -39,7 +39,7 @@ public class SafariBeaconRenderer {
 
     private static List<BlockPos> cachedBlocks = new ArrayList<>();
     private static long lastScanTick = -1;
-    private static final int SCAN_INTERVAL = 60;
+    private static final int SCAN_INTERVAL = 40;
 
     public static void onWorldRenderLast(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
