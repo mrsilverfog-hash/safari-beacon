@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
@@ -33,12 +32,11 @@ public class SafariBeaconRenderer {
     private static final float BEAM_ALPHA_INNER = 0.92f;
     private static final float BEAM_ALPHA_OUTER  = 0.65f;
 
-    private static final int SEARCH_RADIUS = 100;
+    private static final int SEARCH_RADIUS = 50;
     private static final int BEAM_HEIGHT = 256;
     private static final float BEAM_INNER_RADIUS = 0.12f;
     private static final float BEAM_OUTER_RADIUS = 0.25f;
 
-    // Cache : on ne rescanne que toutes les 40 ticks (~2 secondes)
     private static List<BlockPos> cachedBlocks = new ArrayList<>();
     private static long lastScanTick = -1;
     private static final int SCAN_INTERVAL = 40;
@@ -50,7 +48,6 @@ public class SafariBeaconRenderer {
 
         long currentTick = world.getTime();
 
-        // Ne rescanner que toutes les 2 secondes
         if (currentTick - lastScanTick >= SCAN_INTERVAL) {
             cachedBlocks = findNearbyBlocks(world, client.player.getBlockPos());
             lastScanTick = currentTick;
@@ -60,19 +57,15 @@ public class SafariBeaconRenderer {
 
         Camera camera = context.camera();
         Vec3d camPos = camera.getPos();
-
         float tickDelta = context.tickCounter().getTickDelta(true);
         float angle = ((currentTick % 360) + tickDelta) * 2.0f;
 
-        // Sauvegarder l'état OpenGL
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
 
-        // Utiliser une matrice propre sans hériter de la matrice du monde
         MatrixStack matrices = new MatrixStack();
-
         Tessellator tessellator = Tessellator.getInstance();
 
         for (BlockPos pos : cachedBlocks) {
