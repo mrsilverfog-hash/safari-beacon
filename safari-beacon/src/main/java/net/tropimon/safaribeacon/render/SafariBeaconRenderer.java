@@ -32,14 +32,14 @@ public class SafariBeaconRenderer {
     private static final float BEAM_ALPHA_INNER = 0.92f;
     private static final float BEAM_ALPHA_OUTER  = 0.65f;
 
-    private static final int SEARCH_RADIUS = 50;
+    private static final int SEARCH_RADIUS = 64;
     private static final int BEAM_HEIGHT = 256;
     private static final float BEAM_INNER_RADIUS = 0.12f;
     private static final float BEAM_OUTER_RADIUS = 0.25f;
 
     private static List<BlockPos> cachedBlocks = new ArrayList<>();
     private static long lastScanTick = -1;
-    private static final int SCAN_INTERVAL = 40;
+    private static final int SCAN_INTERVAL = 60;
 
     public static void onWorldRenderLast(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
