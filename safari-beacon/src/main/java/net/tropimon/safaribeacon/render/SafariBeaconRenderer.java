@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,23 +66,29 @@ public class SafariBeaconRenderer {
         float tickDelta = context.tickCounter().getTickDelta(true);
         float angle = ((currentTick % 360) + tickDelta) * 2.0f;
 
+        // Récupérer les matrices de projection correctes
+        Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
+        Matrix4f viewMatrix = context.matrixStack().peek().getPositionMatrix();
+
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
+        RenderSystem.enableDepthTest();
 
-        MatrixStack matrices = new MatrixStack();
         Tessellator tessellator = Tessellator.getInstance();
 
         for (BlockPos pos : cachedBlocks) {
-            matrices.push();
-            matrices.translate(
-                pos.getX() + 0.5 - camPos.x,
-                pos.getY() + 1.0 - camPos.y,
-                pos.getZ() + 0.5 - camPos.z
+            // Construire la matrice de translation depuis la caméra
+            Matrix4f modelMatrix = new Matrix4f(viewMatrix);
+            modelMatrix.translate(
+                (float)(pos.getX() + 0.5 - camPos.x),
+                (float)(pos.getY() + 1.0 - camPos.y),
+                (float)(pos.getZ() + 0.5 - camPos.z)
             );
-            renderBeam(matrices, tessellator, angle);
-            matrices.pop();
+
+            renderBeam(tessellator, modelMatrix, angle);
         }
 
         RenderSystem.enableCull();
@@ -89,8 +96,7 @@ public class SafariBeaconRenderer {
         RenderSystem.disableBlend();
     }
 
-    private static void renderBeam(MatrixStack matrices, Tessellator tessellator, float angle) {
-        Matrix4f matrix = matrices.peek().getPositionMatrix();
+    private static void renderBeam(Tessellator tessellator, Matrix4f matrix, float angle) {
         int sides = 8;
         drawBeamLayer(tessellator, matrix, BEAM_INNER_RADIUS, BEAM_HEIGHT, angle,
             BEAM_RED, BEAM_GREEN, BEAM_BLUE, BEAM_ALPHA_INNER, sides);
