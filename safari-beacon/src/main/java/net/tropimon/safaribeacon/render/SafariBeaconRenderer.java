@@ -33,7 +33,7 @@ public class SafariBeaconRenderer {
     private static final float BEAM_ALPHA_INNER = 0.92f;
     private static final float BEAM_ALPHA_OUTER  = 0.65f;
 
-    private static final int SEARCH_RADIUS = 48;
+    private static final int SEARCH_RADIUS = 100;
     private static final int BEAM_HEIGHT = 256;
     private static final float BEAM_INNER_RADIUS = 0.12f;
     private static final float BEAM_OUTER_RADIUS = 0.25f;
