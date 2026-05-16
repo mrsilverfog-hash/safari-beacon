@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.Identifier;
@@ -17,10 +16,6 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class SafariBeaconRenderer {
 
@@ -36,25 +31,18 @@ public class SafariBeaconRenderer {
     private static final float BEAM_ALPHA_INNER = 0.92f;
     private static final float BEAM_ALPHA_OUTER  = 0.65f;
 
-    private static final int SEARCH_RADIUS = 64;
+    private static final int SEARCH_RADIUS = 40;
     private static final int BEAM_HEIGHT = 256;
     private static final float BEAM_INNER_RADIUS = 0.12f;
     private static final float BEAM_OUTER_RADIUS = 0.25f;
 
-    // Thread séparé pour le scan — ne bloque plus le jeu
-    private static final ScheduledExecutorService SCANNER = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "safari-beacon-scanner");
-        t.setDaemon(true);
-        return t;
-    });
-
-    // Liste thread-safe mise à jour par le scanner
-    private static final AtomicReference<List<BlockPos>> cachedBlocks = new AtomicReference<>(new ArrayList<>());
-    private static volatile boolean scanScheduled = false;
+    private static List<BlockPos> cachedBlocks = new ArrayList<>();
+    private static long lastScanTick = -1;
+    private static final int SCAN_INTERVAL = 40;
 
     public static void resetCache() {
-        cachedBlocks.set(new ArrayList<>());
-        scanScheduled = false;
+        cachedBlocks = new ArrayList<>();
+        lastScanTick = -1;
     }
 
     public static void onWorldRenderLast(WorldRenderContext context) {
@@ -62,24 +50,17 @@ public class SafariBeaconRenderer {
         World world = client.world;
         if (world == null || client.player == null) return;
 
-        // Lancer un scan en arrière-plan toutes les 2 secondes
-        if (!scanScheduled) {
-            scanScheduled = true;
-            BlockPos playerPos = client.player.getBlockPos();
-            SCANNER.scheduleAtFixedRate(() -> {
-                try {
-                    List<BlockPos> found = findNearbyBlocks(world, playerPos);
-                    cachedBlocks.set(found);
-                } catch (Exception ignored) {}
-            }, 0, 2, TimeUnit.SECONDS);
+        long currentTick = world.getTime();
+
+        if (currentTick - lastScanTick >= SCAN_INTERVAL) {
+            cachedBlocks = findNearbyBlocks(world, client.player.getBlockPos());
+            lastScanTick = currentTick;
         }
 
-        List<BlockPos> blocks = cachedBlocks.get();
-        if (blocks.isEmpty()) return;
+        if (cachedBlocks.isEmpty()) return;
 
         Camera camera = context.camera();
         Vec3d camPos = camera.getPos();
-        long currentTick = world.getTime();
         float tickDelta = context.tickCounter().getTickDelta(true);
         float angle = ((currentTick % 360) + tickDelta) * 2.0f;
 
@@ -94,7 +75,7 @@ public class SafariBeaconRenderer {
 
         Tessellator tessellator = Tessellator.getInstance();
 
-        for (BlockPos pos : blocks) {
+        for (BlockPos pos : cachedBlocks) {
             Matrix4f modelMatrix = new Matrix4f(viewMatrix);
             modelMatrix.translate(
                 (float)(pos.getX() + 0.5 - camPos.x),
@@ -151,25 +132,23 @@ public class SafariBeaconRenderer {
 
     private static List<BlockPos> findNearbyBlocks(World world, BlockPos center) {
         List<BlockPos> result = new ArrayList<>();
-        try {
-            BlockPos.iterate(
-                center.add(-SEARCH_RADIUS, -SEARCH_RADIUS, -SEARCH_RADIUS),
-                center.add(SEARCH_RADIUS,  SEARCH_RADIUS,  SEARCH_RADIUS)
-            ).forEach(pos -> {
-                BlockState state = world.getBlockState(pos);
-                Identifier id = Registries.BLOCK.getId(state.getBlock());
-                if (id.getNamespace().equals(MOD_ID)) {
-                    for (String name : BLOCK_NAMES) {
-                        if (id.getPath().equals(name)) {
-                            if (isAvailable(state)) {
-                                result.add(pos.toImmutable());
-                            }
-                            break;
+        BlockPos.iterate(
+            center.add(-SEARCH_RADIUS, -SEARCH_RADIUS, -SEARCH_RADIUS),
+            center.add(SEARCH_RADIUS,  SEARCH_RADIUS,  SEARCH_RADIUS)
+        ).forEach(pos -> {
+            BlockState state = world.getBlockState(pos);
+            Identifier id = Registries.BLOCK.getId(state.getBlock());
+            if (id.getNamespace().equals(MOD_ID)) {
+                for (String name : BLOCK_NAMES) {
+                    if (id.getPath().equals(name)) {
+                        if (isAvailable(state)) {
+                            result.add(pos.toImmutable());
                         }
+                        break;
                     }
                 }
-            });
-        } catch (Exception ignored) {}
+            }
+        });
         return result;
     }
 }
