@@ -11,6 +11,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.tropimon.safaribeacon.SafariBeaconClient;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
@@ -46,6 +47,8 @@ public class SafariBeaconRenderer {
     }
 
     public static void onWorldRenderLast(WorldRenderContext context) {
+        if (!SafariBeaconClient.enabled) return;
+
         MinecraftClient client = MinecraftClient.getInstance();
         World world = client.world;
         if (world == null || client.player == null) return;
@@ -82,20 +85,15 @@ public class SafariBeaconRenderer {
                 (float)(pos.getY() + 1.0 - camPos.y),
                 (float)(pos.getZ() + 0.5 - camPos.z)
             );
-            renderBeam(tessellator, modelMatrix, angle);
+            drawBeamLayer(tessellator, modelMatrix, BEAM_INNER_RADIUS, BEAM_HEIGHT, angle,
+                BEAM_RED, BEAM_GREEN, BEAM_BLUE, BEAM_ALPHA_INNER, 8);
+            drawBeamLayer(tessellator, modelMatrix, BEAM_OUTER_RADIUS, BEAM_HEIGHT, angle * 0.7f,
+                BEAM_RED, BEAM_GREEN * 0.5f, BEAM_BLUE * 0.5f, BEAM_ALPHA_OUTER, 8);
         }
 
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();
-    }
-
-    private static void renderBeam(Tessellator tessellator, Matrix4f matrix, float angle) {
-        int sides = 8;
-        drawBeamLayer(tessellator, matrix, BEAM_INNER_RADIUS, BEAM_HEIGHT, angle,
-            BEAM_RED, BEAM_GREEN, BEAM_BLUE, BEAM_ALPHA_INNER, sides);
-        drawBeamLayer(tessellator, matrix, BEAM_OUTER_RADIUS, BEAM_HEIGHT, angle * 0.7f,
-            BEAM_RED, BEAM_GREEN * 0.5f, BEAM_BLUE * 0.5f, BEAM_ALPHA_OUTER, sides);
     }
 
     private static void drawBeamLayer(Tessellator tessellator, Matrix4f matrix,
