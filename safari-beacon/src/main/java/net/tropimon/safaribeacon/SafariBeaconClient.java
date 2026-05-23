@@ -17,7 +17,7 @@ import org.lwjgl.glfw.GLFW;
 public class SafariBeaconClient implements ClientModInitializer {
 
     private static KeyBinding toggleKey;
-    public static boolean enabled = true;
+    public static boolean enabled = false;
 
     private static String message = "";
     private static long messageExpireTime = 0;
